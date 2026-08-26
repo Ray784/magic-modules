@@ -13,19 +13,39 @@ for _, e := range n.(*schema.Set).List() {
 }
 
 // We want to ignore any endpoints that are shared between the two.
-endpointsToKeep := make(map[NetworkEndpointsNetworkEndpoint]struct{})
+// newEndpoints have the endpoints from the main.tf
+// oldEndpoints have details from the listNetworkEndpoint API (have IP)
+endpointsToKeepFromOld := make(map[NetworkEndpointsNetworkEndpoint]struct{})
+endpointsToKeepFromNew := make(map[NetworkEndpointsNetworkEndpoint]struct{})
+
 for e := range oldEndpoints {
     if _, ok := newEndpoints[e]; ok {
-        endpointsToKeep[e] = struct{}{}
+        endpointsToKeepFromOld[e] = struct{}{}
+        endpointsToKeepFromNew[e] = struct{}{}
+        continue
+    }
+
+    // IP may not missing in oldEndpoints, but auto-populated in the new list
+    if e.Instance != "" {
+        newEndpointWithoutIP := e
+        newEndpointWithoutIP.IPAddress = ""
+        if _, ok := newEndpoints[newEndpointWithoutIP]; ok {
+            endpointsToKeepFromNew[newEndpointWithoutIP] = struct{}{}
+            endpointsToKeepFromOld[e] = struct{}{}
+        }
     }
 }
-log.Printf("number of old endpoints: %v\n", len(oldEndpoints))
-log.Printf("number of new endpoints: %v\n", len(newEndpoints))
-log.Printf("number of shared endpoints: %v\n", len(endpointsToKeep))
 
-for e := range endpointsToKeep {
+log.Printf("number of old endpoints: %v, %+v\n", len(oldEndpoints), oldEndpoints)
+log.Printf("number of new endpoints: %v, %+v\n", len(newEndpoints), newEndpoints)
+log.Printf("number of shared endpoints: %v, %+v\n", len(endpointsToKeepFromNew), endpointsToKeepFromNew)
+
+for e := range endpointsToKeepFromOld {
     // Removing all shared endpoints from the old endpoints yields the list of endpoints to detach.
     delete(oldEndpoints, e)
+}
+
+for e := range endpointsToKeepFromNew {
     // Removing all shared endpoints from the new endpoints yields the list of endpoints to attch.
     delete(newEndpoints, e)
 }
