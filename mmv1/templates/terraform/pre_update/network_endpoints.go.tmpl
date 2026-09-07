@@ -39,9 +39,8 @@ for e := range newEndpoints {
     endpointsToAttach = append(endpointsToAttach, NetworkEndpointsNetworkEndpointConvertToAny(e))
 }
 
-log.Printf("number of endpoints to detach: %v\n", len(endpointsToDetach))
-log.Printf("number of endpoints to attach: %v\n", len(endpointsToAttach))
-
+log.Printf("number of endpoints to detach: %v, %+v\n", len(endpointsToDetach), endpointsToDetach)
+log.Printf("number of endpoints to attach: %v, %+v\n", len(endpointsToAttach), endpointsToAttach)
 
 chunkSize := 500 // API only accepts 500 endpoints at a time
 
